@@ -1,65 +1,163 @@
-import Image from "next/image";
+import { supabase } from "@/lib/supabase"
+import PageView from "@/components/PageView"
+import RealtimeStats from "@/components/RealtimeStats"
+import Image from "next/image"
+import Link from "next/link"
+import { TrendingUp, Presentation, Briefcase, Landmark } from "lucide-react"
 
-export default function Home() {
+// Force dynamic rendering since we want fresh data
+export const revalidate = 0
+
+async function getDashboardData() {
+  const [statsRes, cacheRes] = await Promise.all([
+    supabase.from("estatisticas_gerais").select("*").eq("id", 1).single(),
+    supabase.from("dashboard_cache").select("*").eq("id", 1).single()
+  ])
+  
+  return {
+    estatisticas: statsRes.data,
+    cache: cacheRes.data
+  }
+}
+
+export default async function Home() {
+  let data
+  try {
+    data = await getDashboardData()
+  } catch (error) {
+    console.error("Supabase connection error:", error)
+  }
+
+  const estatisticas = data?.estatisticas || {
+    total_hoje: 0,
+    total_mes: 0,
+    total_ano: 0
+  }
+  
+  const cache = data?.cache || {
+    top_produtos: [],
+    top_servicos: [],
+    top_orgaos: []
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="flex flex-col h-full bg-slate-950 text-slate-50 relative selection:bg-cta/30">
+      
+      {/* Premium Background Effects (Liquid Glass Blur Orbs) */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-500/10 blur-[100px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-emerald-500/10 blur-[120px]" />
+      </div>
+
+      {/* Header */}
+      <header className="pt-8 pb-4 px-6 flex justify-center items-center shrink-0 z-10 relative">
+        <div className="flex items-center gap-2">
+          <Image src="/identidade/logooportunometrolicibusca.png" alt="Oportunômetro" width={180} height={40} className="object-contain drop-shadow-md" />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+      </header>
+
+      {/* Main PageView Area */}
+      <main className="flex-1 relative min-h-0 w-full mb-2 z-10">
+        <PageView>
+          {/* Slide 1: Totais */}
+          <RealtimeStats initialData={estatisticas} />
+
+          {/* Slide 2: Produtos e Serviços */}
+          <div className="flex flex-col gap-6 h-full">
+            <div className="flex-1 flex flex-col min-h-0 bg-primary/40 backdrop-blur-xl rounded-2xl border border-white/5 p-5 shadow-xl">
+              <h2 className="text-sm font-mono text-cta font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Briefcase className="w-4 h-4" /> Top 3 Produtos
+              </h2>
+              <div className="flex flex-col gap-3 overflow-y-auto hide-scroll flex-1">
+                {cache.top_produtos?.map((item: any, idx: number) => {
+                  const dotColor = item.bg ? item.bg.replace('/10', '') : 'bg-blue-400';
+                  const textColor = item.color || 'text-slate-300';
+                  const itemName = item.nome && typeof item === 'object' ? item.nome : item;
+                  return (
+                  <div key={idx} className="flex items-center gap-3 p-1 rounded transition-colors hover:bg-white/5">
+                    <div className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-slate-200 truncate font-medium">{itemName}</p>
+                    </div>
+                    {item.valor && (
+                      <div className={`font-mono text-sm ${textColor} font-medium shrink-0`}>
+                        R$ {Math.round(item.valor).toLocaleString('pt-BR')}
+                      </div>
+                    )}
+                  </div>
+                )})}
+              </div>
+            </div>
+
+            <div className="flex-1 flex flex-col min-h-0 bg-primary/40 backdrop-blur-xl rounded-2xl border border-white/5 p-5 shadow-xl">
+              <h2 className="text-sm font-mono text-cta font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Presentation className="w-4 h-4" /> Top 3 Serviços
+              </h2>
+              <div className="flex flex-col gap-3 overflow-y-auto hide-scroll flex-1">
+                {cache.top_servicos?.map((item: any, idx: number) => {
+                  const dotColor = item.bg ? item.bg.replace('/10', '') : 'bg-emerald-400';
+                  const textColor = item.color || 'text-slate-300';
+                  const itemName = item.nome && typeof item === 'object' ? item.nome : item;
+                  return (
+                  <div key={idx} className="flex items-center gap-3 p-1 rounded transition-colors hover:bg-white/5">
+                    <div className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-slate-200 truncate font-medium">{itemName}</p>
+                    </div>
+                    {item.valor && (
+                      <div className={`font-mono text-sm ${textColor} font-medium shrink-0`}>
+                        R$ {Math.round(item.valor).toLocaleString('pt-BR')}
+                      </div>
+                    )}
+                  </div>
+                )})}
+              </div>
+            </div>
+          </div>
+
+          {/* Slide 3: Órgãos */}
+          <div className="h-full">
+            <div className="bg-primary/40 backdrop-blur-xl rounded-2xl border border-white/5 p-5 min-h-[400px] shadow-xl h-full flex flex-col">
+              <h2 className="text-sm font-mono text-cta font-bold uppercase tracking-wider mb-5 flex items-center gap-2 shrink-0">
+                <Landmark className="w-4 h-4" /> Top 5 Órgãos Comprando
+              </h2>
+              <div className="flex flex-col gap-3 overflow-y-auto hide-scroll pb-4 flex-1">
+                {cache.top_orgaos?.map((item: any, idx: number) => {
+                  const itemName = item.nome && typeof item === 'object' ? item.nome : item;
+                  return (
+                  <div key={idx} className="flex items-center gap-4 bg-slate-900/50 rounded-xl p-3 border border-white/5 hover:bg-slate-800/80 transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs font-mono text-slate-400 font-bold shrink-0 shadow-inner">
+                      #{idx + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-200 truncate">{itemName}</p>
+                      {item.qtd_editais && (
+                        <p className="text-xs text-slate-500 mt-0.5">{item.qtd_editais} editais abertos {item.uf ? `• ${item.uf}` : ''}</p>
+                      )}
+                    </div>
+                  </div>
+                )})}
+              </div>
+            </div>
+          </div>
+        </PageView>
       </main>
+
+      {/* Sticky Footer */}
+      <footer className="shrink-0 px-5 pt-3 pb-8 relative z-20">
+        <div className="absolute top-[-30px] left-0 w-full h-[30px] bg-gradient-to-t from-slate-950 to-transparent pointer-events-none" />
+        <Link 
+          href="https://app.licibusca.com" 
+          className="w-full bg-cta hover:bg-emerald-500 text-white font-mono font-bold py-4 rounded-xl transition-all duration-200 active:scale-[0.98] shadow-[0_0_20px_rgba(34,197,94,0.3)] flex items-center justify-center gap-2 group"
+        >
+          Acessar Plataforma
+        </Link>
+        <div className="mt-5 text-center">
+          <span className="text-xs text-slate-500 font-sans tracking-wide">
+            Desenvolvido por <Link href="https://licibusca.com" className="text-slate-300 hover:text-cta transition-colors border-b border-white/10 pb-[1px]">licibusca.com</Link>
+          </span>
+        </div>
+      </footer>
     </div>
-  );
+  )
 }
