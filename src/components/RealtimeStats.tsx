@@ -8,10 +8,17 @@ export default function RealtimeStats({ initialData }: { initialData: any }) {
   const [totais, setTotais] = useState(initialData)
 
   useEffect(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+
     // Busca os dados logo que a tela carrega
     const fetchTotais = async () => {
-      const { data } = await supabase.from('estatisticas_gerais').select('*').eq('id', 1).single();
-      if (data) setTotais(data);
+      const { data } = await supabase.from('estatisticas_gerais').select('*').eq('data', todayStr).limit(1);
+      
+      if (!data || data.length === 0) {
+        setTotais({ total_hoje: 0, total_mes: 0, total_ano: 0 });
+      } else {
+        setTotais(data[0]);
+      }
     };
     fetchTotais();
 
@@ -19,7 +26,7 @@ export default function RealtimeStats({ initialData }: { initialData: any }) {
     const channel = supabase.channel('realtime_totais')
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'estatisticas_gerais' },
+        { event: 'UPDATE', schema: 'public', table: 'estatisticas_gerais', filter: `data=eq.${todayStr}` },
         (payload) => {
           console.log('NOVO DADO RECEBIDO DO SUPABASE:', payload.new);
           setTotais(payload.new); // Atualiza a tela com o dado novo!

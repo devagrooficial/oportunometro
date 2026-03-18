@@ -9,13 +9,14 @@ import { TrendingUp, Presentation, Briefcase, Landmark } from "lucide-react"
 export const revalidate = 0
 
 async function getDashboardData() {
+  const todayStr = new Date().toISOString().split('T')[0];
   const [statsRes, cacheRes] = await Promise.all([
-    supabase.from("estatisticas_gerais").select("*").eq("id", 1).single(),
+    supabase.from("estatisticas_gerais").select("*").eq("data", todayStr).limit(1),
     supabase.from("dashboard_cache").select("*").eq("id", 1).single()
   ])
   
   return {
-    estatisticas: statsRes.data,
+    estatisticas: statsRes.data && statsRes.data.length > 0 ? statsRes.data[0] : null,
     cache: cacheRes.data
   }
 }
