@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase"
 import PageView from "@/components/PageView"
 import RealtimeStats from "@/components/RealtimeStats"
+import UltimasLicitacoes from "@/components/UltimasLicitacoes"
 import Image from "next/image"
 import Link from "next/link"
 import { TrendingUp, Presentation, Briefcase, Landmark } from "lucide-react"
@@ -63,57 +64,9 @@ export default async function Home() {
           {/* Slide 1: Totais */}
           <RealtimeStats initialData={estatisticas} />
 
-          {/* Slide 2: Produtos e Serviços */}
-          <div className="flex flex-col gap-6 h-full">
-            <div className="flex-1 flex flex-col min-h-0 bg-primary/40 backdrop-blur-xl rounded-2xl border border-white/5 p-5 shadow-xl">
-              <h2 className="text-sm font-mono text-cta font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Briefcase className="w-4 h-4" /> Top 3 Produtos
-              </h2>
-              <div className="flex flex-col gap-3 overflow-y-auto hide-scroll flex-1">
-                {cache.top_produtos?.map((item: any, idx: number) => {
-                  const dotColor = item.bg ? item.bg.replace('/10', '') : 'bg-blue-400';
-                  const textColor = item.color || 'text-slate-300';
-                  const itemName = item.nome && typeof item === 'object' ? item.nome : item;
-                  return (
-                  <div key={idx} className="flex items-center gap-3 p-1 rounded transition-colors hover:bg-white/5">
-                    <div className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-slate-200 truncate font-medium">{itemName}</p>
-                    </div>
-                    {item.valor && (
-                      <div className={`font-mono text-sm ${textColor} font-medium shrink-0`}>
-                        R$ {Math.round(item.valor).toLocaleString('pt-BR')}
-                      </div>
-                    )}
-                  </div>
-                )})}
-              </div>
-            </div>
-
-            <div className="flex-1 flex flex-col min-h-0 bg-primary/40 backdrop-blur-xl rounded-2xl border border-white/5 p-5 shadow-xl">
-              <h2 className="text-sm font-mono text-cta font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Presentation className="w-4 h-4" /> Top 3 Serviços
-              </h2>
-              <div className="flex flex-col gap-3 overflow-y-auto hide-scroll flex-1">
-                {cache.top_servicos?.map((item: any, idx: number) => {
-                  const dotColor = item.bg ? item.bg.replace('/10', '') : 'bg-emerald-400';
-                  const textColor = item.color || 'text-slate-300';
-                  const itemName = item.nome && typeof item === 'object' ? item.nome : item;
-                  return (
-                  <div key={idx} className="flex items-center gap-3 p-1 rounded transition-colors hover:bg-white/5">
-                    <div className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-slate-200 truncate font-medium">{itemName}</p>
-                    </div>
-                    {item.valor && (
-                      <div className={`font-mono text-sm ${textColor} font-medium shrink-0`}>
-                        R$ {Math.round(item.valor).toLocaleString('pt-BR')}
-                      </div>
-                    )}
-                  </div>
-                )})}
-              </div>
-            </div>
+          {/* Slide 2: Últimas Licitações */}
+          <div className="h-full">
+            <UltimasLicitacoes />
           </div>
 
           {/* Slide 3: Órgãos */}

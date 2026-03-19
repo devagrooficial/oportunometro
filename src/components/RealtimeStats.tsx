@@ -4,8 +4,14 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import NumberTicker from "@/components/NumberTicker"
 
+const formatarMoeda = (valor: number | null) => {
+  if (!valor) return "R$ 0,00";
+  return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
 export default function RealtimeStats({ initialData }: { initialData: any }) {
   const [totais, setTotais] = useState(initialData)
+  const [ultimoValorAdicionado, setUltimoValorAdicionado] = useState<number | null>(null)
 
   useEffect(() => {
     const todayStr = new Date().toISOString().split('T')[0];
@@ -39,6 +45,19 @@ export default function RealtimeStats({ initialData }: { initialData: any }) {
     };
     fetchTotais();
 
+    const fetchUltimoValor = async () => {
+      const { data } = await supabase
+        .from('licitacoes')
+        .select('valor_estimado')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (data && data.length > 0) {
+        setUltimoValorAdicionado(data[0].valor_estimado);
+      }
+    };
+    fetchUltimoValor();
+
     // Escuta QUALQUER mudança, sem filtro de data, para pegar o momento exato que "Hoje" nasce
     const channel = supabase.channel('realtime_totais')
       .on(
@@ -56,8 +75,22 @@ export default function RealtimeStats({ initialData }: { initialData: any }) {
       )
       .subscribe();
 
+    const channelLicitacoes = supabase.channel('realtime_licitacoes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'licitacoes' },
+        (payload) => {
+          const newData = payload.new as any;
+          if (newData && newData.valor_estimado !== undefined && newData.valor_estimado !== null) {
+            setUltimoValorAdicionado(newData.valor_estimado);
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(channelLicitacoes);
     };
   }, []);
 
@@ -73,6 +106,11 @@ export default function RealtimeStats({ initialData }: { initialData: any }) {
               <NumberTicker key={totais.total_hoje} value={totais.total_hoje} />
             </span>
           </div>
+          {ultimoValorAdicionado !== null && (
+            <div className="text-emerald-500 text-sm font-semibold mt-1 animate-pulse">
+              + {formatarMoeda(ultimoValorAdicionado)}
+            </div>
+          )}
           <span className="text-xs sm:text-sm text-slate-400 font-medium uppercase tracking-wider">
             Hoje
           </span>
@@ -88,6 +126,11 @@ export default function RealtimeStats({ initialData }: { initialData: any }) {
               <NumberTicker key={totais.total_mes} value={totais.total_mes} />
             </span>
           </div>
+          {ultimoValorAdicionado !== null && (
+            <div className="text-emerald-500 text-sm font-semibold mt-1 animate-pulse">
+              + {formatarMoeda(ultimoValorAdicionado)}
+            </div>
+          )}
           <span className="text-xs sm:text-sm text-slate-400 font-medium uppercase tracking-wider">
             Mês de Março
           </span>
@@ -104,6 +147,11 @@ export default function RealtimeStats({ initialData }: { initialData: any }) {
               <NumberTicker key={totais.total_ano} value={totais.total_ano} />
             </span>
           </div>
+          {ultimoValorAdicionado !== null && (
+            <div className="text-emerald-500 text-sm font-semibold mt-1 animate-pulse">
+              + {formatarMoeda(ultimoValorAdicionado)}
+            </div>
+          )}
           <span className="text-xs sm:text-sm text-slate-300 font-medium uppercase tracking-wider">
             Oportunidades de 2026
           </span>
