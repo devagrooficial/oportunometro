@@ -10,31 +10,48 @@ export default function RealtimeStats({ initialData }: { initialData: any }) {
   useEffect(() => {
     const todayStr = new Date().toISOString().split('T')[0];
 
-    // Busca os dados logo que a tela carrega
     const fetchTotais = async () => {
-      const { data } = await supabase.from('estatisticas_gerais').select('*').eq('data', todayStr).limit(1);
+      // Busca a última linha registrada (Regra 1: Contínuo)
+      const { data } = await supabase
+        .from('estatisticas_gerais')
+        .select('*')
+        .order('data', { ascending: false })
+        .limit(1);
       
-      if (!data || data.length === 0) {
-        setTotais({ total_hoje: 0, total_mes: 0, total_ano: 0 });
+      if (data && data.length > 0) {
+        const ultimo = data[0];
+        if (ultimo.data === todayStr) {
+          setTotais(ultimo);
+        } else {
+          // Se for um novo dia sem licitações, herda Ano e Mês, mas zera o Hoje
+          const isMesmoMes = ultimo.data.substring(0, 7) === todayStr.substring(0, 7);
+          const isMesmoAno = ultimo.data.substring(0, 4) === todayStr.substring(0, 4);
+          
+          setTotais({
+            total_hoje: 0,
+            total_mes: isMesmoMes ? ultimo.total_mes : 0,
+            total_ano: isMesmoAno ? ultimo.total_ano : 0
+          });
+        }
       } else {
-        setTotais(data[0]);
+        setTotais({ total_hoje: 0, total_mes: 0, total_ano: 0 });
       }
     };
     fetchTotais();
 
-    // Escuta as mudanças no banco
+    // Escuta QUALQUER mudança, sem filtro de data, para pegar o momento exato que "Hoje" nasce
     const channel = supabase.channel('realtime_totais')
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'estatisticas_gerais', filter: `data=eq.${todayStr}` },
+        { event: '*', schema: 'public', table: 'estatisticas_gerais' },
         (payload) => {
-          console.log('NOVO DADO RECEBIDO DO SUPABASE:', payload.new);
-          setTotais(payload.new); // Atualiza a tela com o dado novo!
+          if (payload.new && payload.new.data === todayStr) {
+            console.log('NOVO DADO RECEBIDO DO SUPABASE:', payload.new);
+            setTotais(payload.new);
+          }
         }
       )
-      .subscribe((status) => {
-        console.log('Status da Inscrição Realtime:', status);
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
