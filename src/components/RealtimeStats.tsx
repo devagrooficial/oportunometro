@@ -17,7 +17,7 @@ export default function RealtimeStats({ initialData }: { initialData: any }) {
         .select('*')
         .order('data', { ascending: false })
         .limit(1);
-      
+
       if (data && data.length > 0) {
         const ultimo = data[0];
         if (ultimo.data === todayStr) {
@@ -26,7 +26,7 @@ export default function RealtimeStats({ initialData }: { initialData: any }) {
           // Se for um novo dia sem licitações, herda Ano e Mês, mas zera o Hoje
           const isMesmoMes = ultimo.data.substring(0, 7) === todayStr.substring(0, 7);
           const isMesmoAno = ultimo.data.substring(0, 4) === todayStr.substring(0, 4);
-          
+
           setTotais({
             total_hoje: 0,
             total_mes: isMesmoMes ? ultimo.total_mes : 0,
@@ -45,9 +45,12 @@ export default function RealtimeStats({ initialData }: { initialData: any }) {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'estatisticas_gerais' },
         (payload) => {
-          if (payload.new && payload.new.data === todayStr) {
-            console.log('NOVO DADO RECEBIDO DO SUPABASE:', payload.new);
-            setTotais(payload.new);
+          // Avisamos o TypeScript para não encher o saco com a tipagem aqui
+          const newData = payload.new as any;
+
+          if (newData && newData.data === todayStr) {
+            console.log('NOVO DADO RECEBIDO DO SUPABASE:', newData);
+            setTotais(newData);
           }
         }
       )
@@ -60,7 +63,7 @@ export default function RealtimeStats({ initialData }: { initialData: any }) {
 
   return (
     <div className="flex flex-col justify-center gap-3 h-full pt-1 pb-1 w-full">
-      
+
       {/* Card 1 */}
       <div className="flex-1 bg-primary/40 backdrop-blur-xl rounded-2xl p-2 border border-white/5 shadow-2xl transition-all duration-300 flex flex-col items-center justify-center min-h-0 w-full overflow-hidden">
         <div className="w-full flex flex-col items-center justify-center text-center space-y-2 py-4">
