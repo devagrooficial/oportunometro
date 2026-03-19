@@ -80,9 +80,10 @@ export default function RealtimeStats({ initialData }: { initialData: any }) {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'licitacoes' },
         (payload) => {
-          const newData = payload.new as any;
-          if (newData && newData.valor_estimado !== undefined && newData.valor_estimado !== null) {
-            setUltimoValorAdicionado(newData.valor_estimado);
+          const newLicitacao = payload.new as any;
+          if (newLicitacao && newLicitacao.valor_estimado) {
+            console.log('NOVA LICITAÇÃO (VALOR):', newLicitacao.valor_estimado);
+            setUltimoValorAdicionado(newLicitacao.valor_estimado);
           }
         }
       )
