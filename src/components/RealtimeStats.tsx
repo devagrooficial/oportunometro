@@ -4,6 +4,16 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import NumberTicker from "@/components/NumberTicker"
 
+const MESES_PT = [
+  'JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO',
+  'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'
+];
+
+const getMesAtual = () => {
+  const agora = new Date();
+  return `MÊS DE ${MESES_PT[agora.getMonth()]}`;
+};
+
 const formatarMoeda = (valor: number | null) => {
   if (!valor) return "R$ 0,00";
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -133,7 +143,7 @@ export default function RealtimeStats({ initialData }: { initialData: any }) {
             </div>
           )}
           <span className="text-xs sm:text-sm text-slate-400 font-medium uppercase tracking-wider">
-            Mês de Março
+            {getMesAtual()}
           </span>
         </div>
       </div>
